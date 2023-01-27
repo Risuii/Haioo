@@ -176,4 +176,97 @@ func TestHandler_GetItems(t *testing.T) {
 		assert.Equal(t, response.StatusOK, rb.Status)
 		assert.NotNil(t, rb.Data)
 	})
+
+	t.Run("Get Items Error Entity", func(t *testing.T) {
+
+		resp := response.Error(response.StatusUnprocessableEntity, exception.ErrUnprocessableEntity)
+
+		cartUseCase := new(mocks.CartUseCase)
+		cartUseCase.On("GetItems", mock.Anything, mock.AnythingOfType("filter.Filter")).Return(resp)
+
+		cartHandler := cart.CartHandler{
+			UseCase: cartUseCase,
+		}
+
+		r := httptest.NewRequest(http.MethodGet, "/just/for/testing", nil)
+		recorder := httptest.NewRecorder()
+
+		handler := http.HandlerFunc(cartHandler.GetItems)
+		handler.ServeHTTP(recorder, r)
+
+		rb := response.ResponseImpl{}
+		if err := json.NewDecoder(recorder.Body).Decode(&rb); err != nil {
+			t.Error(err)
+			return
+		}
+
+		assert.Equal(t, response.StatusUnprocessableEntity, rb.Status)
+		assert.Nil(t, rb.Data)
+	})
+}
+
+func TestHandler_DeleteItems(t *testing.T) {
+	t.Run("Delete Items Success", func(t *testing.T) {
+
+		mockData := product.Product{
+			ID:         1,
+			Nama:       "Test",
+			KodeProduk: "Test",
+			Kuantitas:  1,
+		}
+
+		resp := response.Success(response.StatusOK, mockData)
+
+		newReq, err := json.Marshal(mockData)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		cartUseCase := new(mocks.CartUseCase)
+		cartUseCase.On("DeleteItems", mock.Anything, mock.AnythingOfType("string")).Return(resp)
+
+		cartHandler := cart.CartHandler{
+			UseCase: cartUseCase,
+		}
+
+		r := httptest.NewRequest(http.MethodDelete, "/just/for/testing", bytes.NewReader(newReq))
+		recorder := httptest.NewRecorder()
+
+		handler := http.HandlerFunc(cartHandler.DeleteItems)
+		handler.ServeHTTP(recorder, r)
+
+		rb := response.ResponseImpl{}
+		if err := json.NewDecoder(recorder.Body).Decode(&rb); err != nil {
+			t.Error(err)
+			return
+		}
+
+		assert.Equal(t, response.StatusOK, rb.Status)
+		assert.NotNil(t, rb.Data)
+
+	})
+
+	t.Run("Delete Items Error Entitty", func(t *testing.T) {
+		cartUseCase := new(mocks.CartUseCase)
+
+		cartHandler := cart.CartHandler{
+			UseCase: cartUseCase,
+		}
+
+		r := httptest.NewRequest(http.MethodDelete, "/just/for/testing", nil)
+		recorder := httptest.NewRecorder()
+
+		handler := http.HandlerFunc(cartHandler.DeleteItems)
+		handler.ServeHTTP(recorder, r)
+
+		rb := response.ResponseImpl{}
+		if err := json.NewDecoder(recorder.Body).Decode(&rb); err != nil {
+			t.Error(err)
+			return
+		}
+
+		assert.Equal(t, response.StatusUnprocessableEntity, rb.Status)
+		assert.Nil(t, rb.Data)
+	})
 }
